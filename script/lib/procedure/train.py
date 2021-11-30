@@ -38,8 +38,8 @@ def train():
 
     # define transformations
     transform = transforms.Compose([transforms.ToPILImage(),
-        transforms.Resize((config.INPUT_IMAGE_HEIGHT,
-            config.INPUT_IMAGE_WIDTH)),
+        transfroms.RandomCrop((config.INPUT_IMAGE_HEIGHT, config.INPUT_IMAGE_WIDTH)),
+        #transforms.Resize((config.INPUT_IMAGE_HEIGHT, config.INPUT_IMAGE_WIDTH)),
         transforms.ToTensor()])
     # create the train and test datasets
     trainDS = SegmentationCentriol(imagePaths=trainImages, maskPaths=trainMasks,
