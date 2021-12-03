@@ -1,0 +1,23 @@
+{
+    "seed" : 4,
+
+    "training":{
+        "lr"           : 0.001,
+        "epochs"       : 200,
+        "opt"          : "adam",
+        "weight_decay" : 1e-5,
+        "batch_size"   : 64,
+        "gamma"        : 2
+    },
+
+    "architecture":{
+        "encoder_channels": [3, 16, 32, 64],
+        "decoder_channels": [64, 32, 16],
+        "dropout"         : 0.2,
+        "retain_dim"      : true
+    },
+
+    "evaluation":{
+        "threshold"       : 0.5
+    }
+}
