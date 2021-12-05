@@ -1,35 +1,21 @@
-import constants
-import cv2
-
 import os
 import sys
-import copy
 import glob
 import json
-import wandb
+import argparse
 
 import torch
-import argparse
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
+
+import constants
+import utils
 
 from datasets import SegmentationCentrioleTrain, SegmentationCentrioleTest
 from model import UNet
 from train import train
 
-
-def set_seed(seed=44):
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
 
 
 def arg_parse():
@@ -45,6 +31,8 @@ def arg_parse():
                         help='Dataset directory.')
     parser.add_argument('--checkpoint_dir', type=str, default="./checkpoints",
                         help='Directory for saving checkpoints.')
+    parser.add_argument('--use_wandb', action='store_true', default=False,
+                        help='Whether to use wandb logging.')
 
     return parser.parse_args()
 
@@ -58,7 +46,7 @@ if __name__ == '__main__':
 
     assert os.path.exists(args.config), f"File {args.config} does not exist!"
     config = json.load(open(args.config, "r"))
-    set_seed(config["seed"])
+    utils.set_seed(config["seed"])
 
 
     args.device = (args.device if torch.cuda.is_available() else 'cpu')
@@ -72,9 +60,8 @@ if __name__ == '__main__':
     # relative paths to images
     all_images = []
     for image in glob.glob(f"{image_path}/*.{image_format}"):
-        if("RPE1wt_CEP63+CETN2+PCNT_1" in image):
-            all_images.append(image)
-            print(image)
+        all_images.append(image)
+        print(image)
 
     # train/val/test split: 80/10/10
     train_images, val_images = train_test_split(all_images, test_size=0.2)
@@ -90,21 +77,20 @@ if __name__ == '__main__':
     print(f"Test set: {len(test_images)} instances.")
    
 
-    train_transform = transforms.Compose([transforms.ToPILImage(),
-                                          transforms.RandomCrop((constants.INPUT_IMAGE_HEIGHT, 
-                                                                 constants.INPUT_IMAGE_WIDTH)),
-                                          transforms.ToTensor()])
-
-    test_transform = transforms.Compose([transforms.ToPILImage(),
-                                         transforms.ToTensor()])
+    norm_transform = None
+    train_transform = transforms.Compose([transforms.ToTensor()])
+    test_transform = transforms.Compose([transforms.ToTensor()])
 
 
     train_dataset = SegmentationCentrioleTrain(train_images, train_masks, 
-                                               transform=train_transform)
+                                               transform=train_transform,
+                                               norm_transform=norm_transform)
     val_dataset = SegmentationCentrioleTest(val_images, val_masks, 
-                                            transform=test_transform)
+                                            transform=test_transform,
+                                            norm_transform=norm_transform)
     test_dataset = SegmentationCentrioleTest(test_images, test_masks, 
-                                             transform=test_transform)
+                                             transform=test_transform,
+                                             norm_transform=norm_transform)
 
     
     dataloaders = {}

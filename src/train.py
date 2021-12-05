@@ -1,18 +1,14 @@
-import constants
 from tqdm import tqdm
-import cv2
 import copy
 import wandb
 
 import torch
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
+
+import constants
+import utils
 from metrics import metrics
 
 
@@ -33,11 +29,12 @@ def build_optimizer(config, params):
 def train(model, dataloaders, args, config):
     opt = build_optimizer(config["training"], model.parameters())
 
-    wandb.init(
-            project="centriole-segmentation",
-            entity="timpostuvan",
-            config=config
-        )
+    if(args.use_wandb):
+        wandb.init(
+                project="centriole-segmentation",
+                entity="timpostuvan",
+                config=config
+            )
 
     best_model = model
     val_max = -np.inf
@@ -56,38 +53,42 @@ def train(model, dataloaders, args, config):
             opt.step()
 
         scores = test(dataloaders, model, args, config)
-        if val_max < scores['val']['acc']:
-            val_max = scores['val']['acc']
+        if val_max < scores['val']['f1_score']:
+            val_max = scores['val']['f1_score']
             best_model = copy.deepcopy(model)
 
+        if(args.use_wandb):
+            wandb.log({
+                    "training loss": total_loss,
 
-        wandb.log({
-                "training loss": total_loss,
+                    "training accuracy": scores['train']['acc'],
+                    "validation accuracy": scores['val']['acc'],
+                    "test accuracy": scores['test']['acc'],
 
-                "training accuracy": scores['train']['acc'],
-                "validation accuracy": scores['val']['acc'],
-                "test accuracy": scores['test']['acc'],
+                    "training precision": scores['train']['precision'],
+                    "validation precision": scores['val']['precision'],
+                    "test precision": scores['test']['precision'],
 
-                "training precision": scores['train']['precision'],
-                "validation precision": scores['val']['precision'],
-                "test precision": scores['test']['precision'],
+                    "training recall": scores['train']['recall'],
+                    "validation recall": scores['val']['recall'],
+                    "test recall": scores['test']['recall'],
 
-                "training recall": scores['train']['recall'],
-                "validation recall": scores['val']['recall'],
-                "test recall": scores['test']['recall'],
+                    "training f1 score": scores['train']['f1_score'],
+                    "validation f1 score": scores['val']['f1_score'],
+                    "test f1 score": scores['test']['f1_score'],
 
-                "training average precision": scores['train']['AP_score'],
-                "validation average precision": scores['val']['AP_score'],
-                "test average precision": scores['test']['AP_score'],
+                    "training average precision": scores['train']['AP_score'],
+                    "validation average precision": scores['val']['AP_score'],
+                    "test average precision": scores['test']['AP_score'],
 
-                "training AUC PR": scores['train']['AUC_PRC'],
-                "validation AUC PR": scores['val']['AUC_PRC'],
-                "test AUC PR": scores['test']['AUC_PRC'],
+                    "training AUC PR": scores['train']['AUC_PRC'],
+                    "validation AUC PR": scores['val']['AUC_PRC'],
+                    "test AUC PR": scores['test']['AUC_PRC'],
 
-                "training AUC ROC": scores['train']['AUC_ROC'],
-                "validation AUC ROC": scores['val']['AUC_ROC'],
-                "test AUC ROC": scores['test']['AUC_ROC'],
-            })
+                    "training AUC ROC": scores['train']['AUC_ROC'],
+                    "validation AUC ROC": scores['val']['AUC_ROC'],
+                    "test AUC ROC": scores['test']['AUC_ROC'],
+                })
 
         print("Epoch {}:\nTrain: {}\nValidation: {}\nTest: {}\nLoss: {}\n".format(
               epoch + 1, scores['train'], scores['val'], scores['test'], total_loss))
@@ -108,9 +109,20 @@ def test(dataloaders, model, args, config):
         predictions = []
         for (batch, label) in dataloaders[dataset]:
             batch = batch.to(args.device)
-            pred = model(batch)
-            predictions.append(pred.flatten().cpu().detach().numpy())
+
+            pred = F.softmax(model(batch), dim=1)
+            argmax_pred = torch.argmax(pred, dim=1).unsqueeze(1)
+            prob = torch.gather(pred, dim=1, index=argmax_pred)
+
+            predictions.append(prob.flatten().cpu().detach().numpy())
             labels.append(label.flatten().cpu().numpy())
+
+            """
+            for i in range(batch.shape[0]):
+                stacked = torch.cat((batch[i].detach(), argmax_pred[i].detach()), dim=0)
+                utils.plot_image_mask(stacked.permute(1, 2, 0), label[i].detach().permute(1, 2, 0))
+            """
+
 
         predictions = torch.tensor(np.concatenate(predictions))
         labels = torch.tensor(np.concatenate(labels))

@@ -6,7 +6,7 @@ import torch
 from sklearn.metrics import (PrecisionRecallDisplay, accuracy_score, auc,
                              average_precision_score, confusion_matrix,
                              fbeta_score, precision_recall_curve,
-                             precision_score, recall_score, roc_curve)
+                             precision_score, recall_score, f1_score, roc_curve)
 
 
 def metrics(y_pred, y_true, threshold=0.5, curve=False):
@@ -37,6 +37,7 @@ def metrics(y_pred, y_true, threshold=0.5, curve=False):
     acc = accuracy_score(y_true, y_pred_thresholded)
     precision = precision_score(y_true, y_pred_thresholded)
     recall = recall_score(y_true, y_pred_thresholded)
+    _f1_score = f1_score(y_true, y_pred_thresholded)
 
     if curve:
         plt.plot(fpr, tpr)
@@ -52,4 +53,4 @@ def metrics(y_pred, y_true, threshold=0.5, curve=False):
         plt.legend()
         plt.show()
 
-    return {"acc": acc, "precision": precision, "recall": recall, "AP_score": AP_score, "AUC_PRC": auc_PRC_score, "AUC_ROC": auc_ROC_score}
+    return {"acc": acc, "precision": precision, "recall": recall, "f1_score": _f1_score, "AP_score": AP_score, "AUC_PRC": auc_PRC_score, "AUC_ROC": auc_ROC_score}
