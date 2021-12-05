@@ -1,5 +1,4 @@
 import torch
-from torch.nn.functional import normalize
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -14,9 +13,20 @@ import preprocessing
 
 def image_mask_preprocessing(image_path, mask_path):
 	# load the image from disk and read the associated mask from disk in grayscale mode
-	image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+	image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype(dtype=np.float)
 	mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) 
 #	image = image.expand_dims(axis=-1)
+
+	for i in range(image.shape[2]):
+		# thresholding
+		q = np.percentile(image[:, :, i], q=98.5)
+		image[:, :, i][image[:, :, i] < q] = 0
+
+		# nonmaxima suppresion
+		image[:, :, i] = preprocessing.nonmaxima_suppression_box(image[:, :, i])
+		kernel = np.ones((5, 5))
+		image[:, :, i] = cv2.dilate(image[:, :, i], kernel=kernel, iterations=2)
+
 	
 	"""
 	for i in range(image.shape[2]):
@@ -26,8 +36,8 @@ def image_mask_preprocessing(image_path, mask_path):
 		image = np.sum(image, axis=2)[:, :, np.newaxis]
 	"""
 
-	image = preprocessing.normalize(image)
-#	image = preprocessing.standardize(image)
+#	image = preprocessing.normalize(image)
+	image = preprocessing.standardize(image)
 	return image, mask
 
 
@@ -74,9 +84,6 @@ class SegmentationCentrioleTrain(Dataset):
 		image_mask = self.random_crop(image_mask)
 		image = image_mask[:-1]
 		mask = image_mask[[-1]]
-
-		# standardize each patch separately
-		image = preprocessing.standardize_patch(image)
 
 		# return a tuple of the image and its mask
 		return (image.float(), mask.long())
@@ -145,9 +152,6 @@ class SegmentationCentrioleTest(Dataset):
 
 		image = image[:, height_start:height_end, width_start:width_end]
 		mask = mask[:, height_start:height_end, width_start:width_end]
-
-		# standardize patch separately
-		image = preprocessing.standardize_patch(image)
 
 		# return a tuple of the image and its mask
 		return (image.float(), mask.long())
