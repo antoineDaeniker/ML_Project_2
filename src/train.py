@@ -111,8 +111,8 @@ def test(dataloaders, model, args, config):
             batch = batch.to(args.device)
 
             pred = F.softmax(model(batch), dim=1)
-            argmax_pred = torch.argmax(pred, dim=1).unsqueeze(1)
-            prob = torch.gather(pred, dim=1, index=argmax_pred)
+            argmax_pred = torch.argmax(pred, dim=1).unsqueeze(1)            
+            prob = pred[:, 1, :, :]
 
             predictions.append(prob.flatten().cpu().detach().numpy())
             labels.append(label.flatten().cpu().numpy())

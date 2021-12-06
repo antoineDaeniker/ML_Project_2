@@ -11,22 +11,22 @@ import constants
 import preprocessing
 
 
-def image_mask_preprocessing(image_path, mask_path):
+def image_mask_preprocessing(image_path, mask_path, dataset_config):
 	# load the image from disk and read the associated mask from disk in grayscale mode
 	image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype(dtype=np.float)
 	mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) 
 #	image = image.expand_dims(axis=-1)
 
-	for i in range(image.shape[2]):
-		# thresholding
-		q = np.percentile(image[:, :, i], q=98.5)
-		image[:, :, i][image[:, :, i] < q] = 0
+	if(dataset_config["nonmaxima_suppresion"]):
+		for i in range(image.shape[2]):
+			# thresholding
+			q = np.percentile(image[:, :, i], q=98.5)
+			image[:, :, i][image[:, :, i] < q] = 0
 
-		# nonmaxima suppresion
-		image[:, :, i] = preprocessing.nonmaxima_suppression_box(image[:, :, i])
-		kernel = np.ones((5, 5))
-		image[:, :, i] = cv2.dilate(image[:, :, i], kernel=kernel, iterations=2)
-
+			# nonmaxima suppresion
+			image[:, :, i] = preprocessing.nonmaxima_suppression_box(image[:, :, i])
+			kernel = np.ones((5, 5))
+			image[:, :, i] = cv2.dilate(image[:, :, i], kernel=kernel, iterations=2)
 	
 	"""
 	for i in range(image.shape[2]):
@@ -36,14 +36,18 @@ def image_mask_preprocessing(image_path, mask_path):
 		image = np.sum(image, axis=2)[:, :, np.newaxis]
 	"""
 
-#	image = preprocessing.normalize(image)
-	image = preprocessing.standardize(image)
+	if(dataset_config["normalize"]):
+		image = preprocessing.normalize(image)
+
+	if(dataset_config["standardize"]):
+		image = preprocessing.standardize(image)
+
 	return image, mask
 
 
 
 class SegmentationCentrioleTrain(Dataset):
-	def __init__(self, image_paths, mask_paths, transform=None, norm_transform=None, num_samples=5000):
+	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, norm_transform=None, num_samples=10000):
 		# store the image and mask filepaths, and augmentation
 		# transforms
 		self.image_paths = image_paths
@@ -57,7 +61,7 @@ class SegmentationCentrioleTrain(Dataset):
 		# preprocess all images for faster training
 		self.image_masks = []
 		for i in range(len(self.image_paths)):
-			image, mask = image_mask_preprocessing(self.image_paths[i], self.mask_paths[i])
+			image, mask = image_mask_preprocessing(self.image_paths[i], self.mask_paths[i], dataset_config)
 
 			# check to see if we are applying any transformations
 			if self.transform is not None:
@@ -91,7 +95,7 @@ class SegmentationCentrioleTrain(Dataset):
 
 
 class SegmentationCentrioleTest(Dataset):
-	def __init__(self, image_paths, mask_paths, transform=None, norm_transform=None):
+	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, norm_transform=None):
 		# store the image and mask filepaths, and augmentation
 		# transforms
 		self.image_paths = image_paths
@@ -111,7 +115,7 @@ class SegmentationCentrioleTest(Dataset):
 		self.images = []
 		self.masks = []
 		for i in range(len(self.image_paths)):
-			image, mask = image_mask_preprocessing(self.image_paths[i], self.mask_paths[i])
+			image, mask = image_mask_preprocessing(self.image_paths[i], self.mask_paths[i], dataset_config)
 
 			# check to see if we are applying any transformations
 			if self.transform is not None:

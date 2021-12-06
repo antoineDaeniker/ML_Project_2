@@ -84,13 +84,16 @@ if __name__ == '__main__':
 
     train_dataset = SegmentationCentrioleTrain(train_images, train_masks, 
                                                transform=train_transform,
-                                               norm_transform=norm_transform)
+                                               norm_transform=norm_transform,
+                                               dataset_config=config["dataset"])
     val_dataset = SegmentationCentrioleTest(val_images, val_masks, 
                                             transform=test_transform,
-                                            norm_transform=norm_transform)
+                                            norm_transform=norm_transform,
+                                            dataset_config=config["dataset"])
     test_dataset = SegmentationCentrioleTest(test_images, test_masks, 
                                              transform=test_transform,
-                                             norm_transform=norm_transform)
+                                             norm_transform=norm_transform,
+                                             dataset_config=config["dataset"])
 
     
     dataloaders = {}

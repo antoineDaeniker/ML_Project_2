@@ -9,7 +9,7 @@ import constants
 
 
 class FocalLoss(nn.Module):
-	def __init__(self, alpha=1e-3, gamma=0):
+	def __init__(self, alpha=1e-3, gamma=2):
 		super(FocalLoss, self).__init__()
 		# alpha is proportion of positive instances
 		# gamma is relaxation parameter
