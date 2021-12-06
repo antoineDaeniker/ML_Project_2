@@ -10,6 +10,12 @@
         "gamma"        : 2
     },
 
+    "dataset":{
+        "normalize"             : true,
+        "standardize"           : false,
+        "nonmaxima_suppresion"  : true
+    },
+
     "architecture":{
         "encoder_channels": [3, 32, 64, 128, 256, 512],
         "decoder_channels": [512, 256, 128, 64],
