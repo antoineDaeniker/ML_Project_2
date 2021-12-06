@@ -6,10 +6,11 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
+from sklearn.metrics import confusion_matrix
 
 import constants
 import utils
-from metrics import metrics
+from metrics import metrics, metrics_from_confusion_matrix
 
 
 
@@ -75,19 +76,7 @@ def train(model, dataloaders, args, config):
 
                     "training f1 score": scores['train']['f1_score'],
                     "validation f1 score": scores['val']['f1_score'],
-                    "test f1 score": scores['test']['f1_score'],
-
-                    "training average precision": scores['train']['AP_score'],
-                    "validation average precision": scores['val']['AP_score'],
-                    "test average precision": scores['test']['AP_score'],
-
-                    "training AUC PR": scores['train']['AUC_PRC'],
-                    "validation AUC PR": scores['val']['AUC_PRC'],
-                    "test AUC PR": scores['test']['AUC_PRC'],
-
-                    "training AUC ROC": scores['train']['AUC_ROC'],
-                    "validation AUC ROC": scores['val']['AUC_ROC'],
-                    "test AUC ROC": scores['test']['AUC_ROC'],
+                    "test f1 score": scores['test']['f1_score']
                 })
 
         print("Epoch {}:\nTrain: {}\nValidation: {}\nTest: {}\nLoss: {}\n".format(
@@ -105,17 +94,18 @@ def test(dataloaders, model, args, config):
 
     scores = {}
     for dataset in dataloaders:
-        labels = []
-        predictions = []
-        for (batch, label) in dataloaders[dataset]:
+        total_confusion_matrix = np.zeros((constants.NUM_CLASSES, constants.NUM_CLASSES))
+        for (batch, label) in tqdm(dataloaders[dataset]):
             batch = batch.to(args.device)
 
             pred = F.softmax(model(batch), dim=1)
             argmax_pred = torch.argmax(pred, dim=1).unsqueeze(1)            
-            prob = pred[:, 1, :, :]
+            thresholded_pred = (pred[:, 1, :, :] >= config["evaluation"]["threshold"])
 
-            predictions.append(prob.flatten().cpu().detach().numpy())
-            labels.append(label.flatten().cpu().numpy())
+            cur_confusion_matrix = confusion_matrix(label.flatten().cpu().detach().numpy(),
+                                                    thresholded_pred.flatten().cpu().detach().numpy(),
+                                                    labels=np.arange(constants.NUM_CLASSES))
+            total_confusion_matrix += cur_confusion_matrix
 
             """
             for i in range(batch.shape[0]):
@@ -123,13 +113,8 @@ def test(dataloaders, model, args, config):
                 utils.plot_image_mask(stacked.permute(1, 2, 0), label[i].detach().permute(1, 2, 0))
             """
 
+        scores[dataset] = metrics_from_confusion_matrix(total_confusion_matrix)
 
-        predictions = torch.tensor(np.concatenate(predictions))
-        labels = torch.tensor(np.concatenate(labels))
         print(dataset)
-        print(np.histogram(predictions.numpy(), bins=5))
-        print(np.histogram(labels.numpy(), bins=5))
-        print()
-        
-        scores[dataset] = metrics(predictions, labels, threshold=config["evaluation"]["threshold"])
+        print(total_confusion_matrix)
     return scores

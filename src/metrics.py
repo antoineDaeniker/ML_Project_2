@@ -9,6 +9,15 @@ from sklearn.metrics import (PrecisionRecallDisplay, accuracy_score, auc,
                              precision_score, recall_score, f1_score, roc_curve)
 
 
+def metrics_from_confusion_matrix(_confusion_matrix):
+    TN, FN, TP, FP = _confusion_matrix[np.array([0, 1, 1, 0]), np.array([0, 0, 1, 1])]
+    acc = (TP + TN) / (TN + FN + TP + FP)
+    precision = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    recall = TP / (TP + FN) if (TP + FN) > 0 else 0.0
+    _f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+    return {"acc": acc, "precision": precision, "recall": recall, "f1_score": _f1_score}
+
+
 def metrics(y_pred, y_true, threshold=0.5, curve=False):
 
     ######################################
