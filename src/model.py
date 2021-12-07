@@ -39,7 +39,6 @@ class Block(nn.Module):
 			nn.ReLU(inplace=True),
 			nn.BatchNorm2d(out_channels)
 		)
-		
 
 	def forward(self, x):
 		"""(convolution => [BN] => ReLU) * 2"""

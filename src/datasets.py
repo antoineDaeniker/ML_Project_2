@@ -74,6 +74,7 @@ class SegmentationCentrioleTrain(Dataset):
 
 			# save crops with enough positive pixels
 			for i in range(center_indices.shape[0]):
+				# positive example
 				x, y = center_indices[i]
 				top, left = int(x - half_dim + 1), int(y - half_dim + 1)
 				image_crop = transforms.functional.crop(image, top, left, constants.INPUT_IMAGE_HEIGHT, 
@@ -87,6 +88,24 @@ class SegmentationCentrioleTrain(Dataset):
 				
 				self.images.append(image_crop)	   
 				self.masks.append(mask_crop)
+
+				# negative example with probability min_pos_p
+				if(np.random.uniform() < min_pos_p):
+					x = np.random.randint(constants.INPUT_IMAGE_HEIGHT)
+					y = np.random.randint(constants.INPUT_IMAGE_WIDTH)
+					top, left = int(x - half_dim + 1), int(y - half_dim + 1)
+					image_crop = transforms.functional.crop(image, top, left, constants.INPUT_IMAGE_HEIGHT, 
+																			constants.INPUT_IMAGE_WIDTH)
+				
+					mask_crop = transforms.functional.crop(mask, top, left, constants.INPUT_IMAGE_HEIGHT, 
+																			constants.INPUT_IMAGE_WIDTH)
+					
+					assert(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
+						   mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH)
+
+					self.images.append(image_crop)	   
+					self.masks.append(mask_crop)
+
 
 	def __len__(self):
 		# return number of samples per epoch

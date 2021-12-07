@@ -96,6 +96,7 @@ if __name__ == '__main__':
                                                      preprocessing.RandomGaussianNoise(mean=0, std=1)
                                                     ])
     """
+    
     train_transform = transforms.Compose([transforms.ToTensor()])
     test_transform = transforms.Compose([transforms.ToTensor()])
 
