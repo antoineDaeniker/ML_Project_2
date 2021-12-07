@@ -6,6 +6,16 @@ from scipy import signal
 import constants
 import utils
 
+class RandomGaussianNoise(object):
+    "Adds random gaussian noise to the image"
+    
+    def __init__(self, mean=0, std=1):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, image):
+        noise = torch.normal(mean=mean, std=std, size=image.shape)
+        return (image + noise)
 
 
 def standardize_patch(image):
