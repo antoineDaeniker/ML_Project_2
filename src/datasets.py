@@ -82,12 +82,15 @@ class SegmentationCentrioleTrain(Dataset):
 			
 				mask_crop = transforms.functional.crop(mask, top, left, constants.INPUT_IMAGE_HEIGHT, 
 														                constants.INPUT_IMAGE_WIDTH)
-				
+				"""
 				assert(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
 					   mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH)
-				
-				self.images.append(image_crop)	   
-				self.masks.append(mask_crop)
+				"""
+
+				if(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
+					  mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH):
+						self.images.append(image_crop)	   
+						self.masks.append(mask_crop)
 
 				# negative example with probability min_pos_p
 				if(np.random.uniform() < min_pos_p):
@@ -99,12 +102,19 @@ class SegmentationCentrioleTrain(Dataset):
 				
 					mask_crop = transforms.functional.crop(mask, top, left, constants.INPUT_IMAGE_HEIGHT, 
 																			constants.INPUT_IMAGE_WIDTH)
-					
+					"""
 					assert(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
 						   mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH)
+					"""
+					
+					if(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
+					  mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH):
+						self.images.append(image_crop)	   
+						self.masks.append(mask_crop)
 
-					self.images.append(image_crop)	   
-					self.masks.append(mask_crop)
+					
+
+				
 
 
 	def __len__(self):
