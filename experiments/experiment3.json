@@ -6,7 +6,7 @@
         "epochs"       : 200,
         "opt"          : "adam",
         "weight_decay" : 1e-4,
-        "batch_size"   : 128,
+        "batch_size"   : 2000,
         "gamma"        : 1.5
     },
 
@@ -17,8 +17,8 @@
     },
 
     "architecture":{
-        "encoder_channels": [3, 32, 64],
-        "decoder_channels": [64, 32],
+        "encoder_channels": [3, 64],
+        "decoder_channels": [64],
         "dropout"         : 0.2,
         "retain_dim"      : true
     },

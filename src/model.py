@@ -9,7 +9,7 @@ import constants
 
 
 class FocalLoss(nn.Module):
-	def __init__(self, alpha=1e-3, gamma=2):
+	def __init__(self, alpha=0.005, gamma=2):
 		super(FocalLoss, self).__init__()
 		# alpha is proportion of positive instances
 		# gamma is relaxation parameter
@@ -30,14 +30,15 @@ class FocalLoss(nn.Module):
 class Block(nn.Module):
 	def __init__(self, in_channels, out_channels):
 		super().__init__()
+
 		self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
+			nn.Conv2d(in_channels, out_channels, kernel_size=3, padding="same"),
+			nn.ReLU(inplace=True),
+			nn.BatchNorm2d(out_channels),
+			nn.Conv2d(out_channels, out_channels, kernel_size=3, padding="same"),
+			nn.ReLU(inplace=True),
+			nn.BatchNorm2d(out_channels)
+		)
 
 	def forward(self, x):
 		"""(convolution => [BN] => ReLU) * 2"""

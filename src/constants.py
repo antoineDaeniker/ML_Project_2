@@ -3,8 +3,8 @@ import os
 
 
 # define the input image dimensions
-INPUT_IMAGE_WIDTH = 256
-INPUT_IMAGE_HEIGHT = 256
+INPUT_IMAGE_WIDTH = 32 # maybe 16
+INPUT_IMAGE_HEIGHT = 32 # maybe 16
 
 # full image dimension
 FULL_IMAGE_WIDTH = 2048

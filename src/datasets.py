@@ -17,6 +17,7 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 	mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) 
 #	image = image.expand_dims(axis=-1)
 
+
 	if(dataset_config["nonmaxima_suppresion"]):
 		for i in range(image.shape[2]):
 			# thresholding
@@ -28,14 +29,6 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 			kernel = np.ones((5, 5))
 			image[:, :, i] = cv2.dilate(image[:, :, i], kernel=kernel, iterations=2)
 	
-	"""
-	for i in range(image.shape[2]):
-		image[:, :, i] = preprocessing.nonmaxima_suppression_box(image[:, :, i])
-		kernel = np.ones((5, 5))
-		image[:, :, i] = cv2.dilate(image[:, :, i], kernel=kernel, iterations=2)
-		image = np.sum(image, axis=2)[:, :, np.newaxis]
-	"""
-
 	if(dataset_config["normalize"]):
 		image = preprocessing.normalize(image)
 
@@ -47,47 +40,99 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 
 
 class SegmentationCentrioleTrain(Dataset):
-	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, norm_transform=None, num_samples=10000):
+	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, data_augmentation=None, min_pos_p=0.05):
 		# store the image and mask filepaths, and augmentation
 		# transforms
 		self.image_paths = image_paths
 		self.mask_paths = mask_paths
 		self.transform = transform
-		self.norm_transform = norm_transform
+
+		# data augmentation should be dictonary with two transforms:
+		# one which is applied only to the image (gaussian blur) 
+		# and one which is applied to both of them simultaneously (random flip, rotation, ...)
+		self.data_augmentation = data_augmentation
 		self.random_crop = transforms.RandomCrop(size=(constants.INPUT_IMAGE_WIDTH,
 												       constants.INPUT_IMAGE_HEIGHT))
-		self.num_samples = num_samples
 		
 		# preprocess all images for faster training
-		self.image_masks = []
+		self.images = []
+		self.masks = []
 		for i in range(len(self.image_paths)):
 			image, mask = image_mask_preprocessing(self.image_paths[i], self.mask_paths[i], dataset_config)
+
+			# store only crops that contain at least min_pos_p of positive pixels
+			kernel = np.ones((constants.INPUT_IMAGE_WIDTH, constants.INPUT_IMAGE_HEIGHT))
+			number_of_positive = cv2.filter2D(src=mask / 255, ddepth=-1, kernel=kernel)
+			center_indices = np.argwhere(number_of_positive > 
+										(kernel.shape[0] * kernel.shape[1]) * min_pos_p)
+			half_dim = constants.INPUT_IMAGE_HEIGHT / 2
 
 			# check to see if we are applying any transformations
 			if self.transform is not None:
 				image = self.transform(image)
 				mask = self.transform(mask)
 
-			if self.norm_transform is not None:
-				image = self.norm_transform(image)
+			# save crops with enough positive pixels
+			for i in range(center_indices.shape[0]):
+				# positive example
+				x, y = center_indices[i]
+				top, left = int(x - half_dim + 1), int(y - half_dim + 1)
+				image_crop = transforms.functional.crop(image, top, left, constants.INPUT_IMAGE_HEIGHT, 
+																		  constants.INPUT_IMAGE_WIDTH)
+			
+				mask_crop = transforms.functional.crop(mask, top, left, constants.INPUT_IMAGE_HEIGHT, 
+														                constants.INPUT_IMAGE_WIDTH)
+				"""
+				assert(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
+					   mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH)
+				"""
 
-			# image and mask are concatenated for better performance
-			image_mask = torch.cat((image, mask), dim=0)
-			self.image_masks.append(image_mask)
+				if(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
+					  mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH):
+						self.images.append(image_crop)	   
+						self.masks.append(mask_crop)
+
+				# negative example with probability min_pos_p
+				if(np.random.uniform() < min_pos_p):
+					x = np.random.randint(constants.INPUT_IMAGE_HEIGHT)
+					y = np.random.randint(constants.INPUT_IMAGE_WIDTH)
+					top, left = int(x - half_dim + 1), int(y - half_dim + 1)
+					image_crop = transforms.functional.crop(image, top, left, constants.INPUT_IMAGE_HEIGHT, 
+																			constants.INPUT_IMAGE_WIDTH)
+				
+					mask_crop = transforms.functional.crop(mask, top, left, constants.INPUT_IMAGE_HEIGHT, 
+																			constants.INPUT_IMAGE_WIDTH)
+					"""
+					assert(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
+						   mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH)
+					"""
+					
+					if(mask_crop.shape[1] == constants.INPUT_IMAGE_HEIGHT and 
+					  mask_crop.shape[2] == constants.INPUT_IMAGE_WIDTH):
+						self.images.append(image_crop)	   
+						self.masks.append(mask_crop)
+
+					
+
+				
 
 
 	def __len__(self):
 		# return number of samples per epoch
-		return self.num_samples
+		return len(self.images)
 
 	def __getitem__(self, idx):
-		idx = idx % len(self.image_masks)
+		image = self.images[idx]
+		mask = self.masks[idx]
 
-		image_mask = self.image_masks[idx]		
+		if self.data_augmentation is not None and self.data_augmentation["both"] is not None:
+			image_mask = torch.cat((image, mask), dim=0)
+			image_mask = self.data_augmentation["both"](image_mask)
+			image = image_mask[:-1]
+			mask = image_mask[[-1]]
 
-		image_mask = self.random_crop(image_mask)
-		image = image_mask[:-1]
-		mask = image_mask[[-1]]
+		if self.data_augmentation is not None and self.data_augmentation["image"] is not None:
+			image = self.data_augmentation["image"](image)
 
 		# return a tuple of the image and its mask
 		return (image.float(), mask.long())
@@ -95,13 +140,12 @@ class SegmentationCentrioleTrain(Dataset):
 
 
 class SegmentationCentrioleTest(Dataset):
-	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, norm_transform=None):
+	def __init__(self, image_paths, mask_paths, dataset_config, transform=None):
 		# store the image and mask filepaths, and augmentation
 		# transforms
 		self.image_paths = image_paths
 		self.mask_paths = mask_paths
 		self.transform = transform
-		self.norm_transform = norm_transform
 		self.width_crops = ceil(constants.FULL_IMAGE_WIDTH / constants.INPUT_IMAGE_WIDTH)
 		self.height_crops = ceil(constants.FULL_IMAGE_HEIGHT / constants.INPUT_IMAGE_HEIGHT)
 		self.crops_per_image = self.width_crops * self.height_crops
@@ -125,9 +169,6 @@ class SegmentationCentrioleTest(Dataset):
 
 			image = self.padding_transform(image)
 			mask = self.padding_transform(mask)
-
-			if self.norm_transform is not None:
-				image = self.norm_transform(image)
 
 			self.images.append(image)
 			self.masks.append(mask)

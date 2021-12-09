@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 
 import constants
 import utils
+import preprocessing
 
 from datasets import SegmentationCentrioleTrain, SegmentationCentrioleTest
 from model import UNet
@@ -76,23 +77,38 @@ if __name__ == '__main__':
     print(f"Validation set: {len(val_images)} instances.")
     print(f"Test set: {len(test_images)} instances.")
    
+    data_augmentation = {}
+    data_augmentation["both"] = None
+    data_augmentation["image"] = None
 
-    norm_transform = None
+    """
+    data_augmentation = {}
+    data_augmentation["both"] = transforms.Compose([
+                                                    transforms.RandomHorizontalFlip(p=0.3),
+                                                    transforms.RandomVerticalFlip(p=0.3),
+                                                    transforms.RandomApply(
+                                                         transforms.RandomRotation(degrees=40), p=0.6
+                                                        )
+                                                   ])
+    # Maybe also transforms.RandomResizedCrop???
+    data_augmentation["image"] = transforms.Compose([transforms.RandomGrayscale(p=0.1),
+                                                     transforms.GaussianBlur(kernel_size=3, sigma=(0.5, 2)),
+                                                     preprocessing.RandomGaussianNoise(mean=0, std=1)
+                                                    ])
+    """
+    
     train_transform = transforms.Compose([transforms.ToTensor()])
     test_transform = transforms.Compose([transforms.ToTensor()])
 
 
     train_dataset = SegmentationCentrioleTrain(train_images, train_masks, 
                                                transform=train_transform,
-                                               norm_transform=norm_transform,
                                                dataset_config=config["dataset"])
     val_dataset = SegmentationCentrioleTest(val_images, val_masks, 
                                             transform=test_transform,
-                                            norm_transform=norm_transform,
                                             dataset_config=config["dataset"])
     test_dataset = SegmentationCentrioleTest(test_images, test_masks, 
                                              transform=test_transform,
-                                             norm_transform=norm_transform,
                                              dataset_config=config["dataset"])
 
     
