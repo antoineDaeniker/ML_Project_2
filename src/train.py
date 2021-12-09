@@ -33,7 +33,7 @@ def train(model, dataloaders, args, config):
     if(args.use_wandb):
         wandb.init(
                 project="centriole-segmentation",
-                entity="timpostuvan",
+                entity="centriole-segmentation",
                 config=config
             )
 
