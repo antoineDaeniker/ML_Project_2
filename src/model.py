@@ -98,7 +98,7 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-	def __init__(self, channels=(64, 32, 16), attention=True):
+	def __init__(self, channels=(64, 32, 16), attention=True, dropout_p=0.1):
 		super().__init__()
 		self.channels = channels
 		self.upconvs = nn.ModuleList([nn.ConvTranspose2d(channels[i], channels[i + 1], kernel_size=2, stride=2)
@@ -111,6 +111,7 @@ class Decoder(nn.Module):
 		else:
 			self.attention_blocks = nn.ModuleList([nn.Identity()
 										     	   for i in range(len(channels) - 1)])
+		self.dropout = nn.Dropout(p=dropout_p)
 
 	def forward(self, x, enc_features):
 		# loop through the number of channels
@@ -124,6 +125,7 @@ class Decoder(nn.Module):
 			# decoder block
 			enc_feature = self.crop(enc_features[i], x)
 			x = torch.cat([x, enc_feature], dim=1)
+			x = self.dropout(x)
 			x = self.dec_blocks[i](x)
 			x = self.attention_blocks[i](x)
 
@@ -145,7 +147,7 @@ class UNet(nn.Module):
 	def __init__(self, config, gamma=2):
 		super().__init__()
 		self.encoder = Encoder(config["encoder_channels"], config["attention"])
-		self.decoder = Decoder(config["decoder_channels"], config["attention"])
+		self.decoder = Decoder(config["decoder_channels"], config["attention"], config["dropout"])
 
 		self.head = nn.Conv2d(config["decoder_channels"][-1], constants.NUM_CLASSES, kernel_size=1)
 		self.retain_dim = config["retain_dim"]
