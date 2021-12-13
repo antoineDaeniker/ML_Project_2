@@ -2,24 +2,26 @@
     "seed" : 4,
 
     "training":{
-        "lr"           : 0.0001,
-        "epochs"       : 200,
+        "lr"           : 0.005,
+        "epochs"       : 20,
         "opt"          : "adam",
-        "weight_decay" : 1e-4,
-        "batch_size"   : 2000,
-        "gamma"        : 2
+        "weight_decay" : 1e-3,
+        "batch_size"   : 5000,
+        "gamma"        : 1.5
     },
 
     "dataset":{
         "normalize"             : true,
         "standardize"           : false,
-        "nonmaxima_suppresion"  : false
+        "nonmaxima_suppresion"  : false,
+        "data_augmentation"     : true
     },
 
     "architecture":{
-        "encoder_channels": [3, 32, 64],
+        "encoder_channels": [1, 32, 64],
         "decoder_channels": [64, 32],
-        "dropout"         : 0.2,
+        "dropout"         : 0.1,
+        "attention"       : true,
         "retain_dim"      : true
     },
 
