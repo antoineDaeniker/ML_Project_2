@@ -27,6 +27,25 @@ class FocalLoss(nn.Module):
 
 
 
+class SE_Block(nn.Module):
+    def __init__(self, in_channels, r=8):
+        super().__init__()
+        self.squeeze = nn.AdaptiveAvgPool2d(1)
+        self.excitation = nn.Sequential(
+            nn.Linear(in_channels, in_channels // r, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(in_channels // r, in_channels, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        batch_size, channels, _, _ = x.shape
+        weight = self.squeeze(x).view(batch_size, channels)
+        weight = self.excitation(weight).view(batch_size, channels, 1, 1)
+        return x * weight.expand(x.shape)
+
+
+
 class Block(nn.Module):
 	def __init__(self, in_channels, out_channels):
 		super().__init__()
@@ -47,10 +66,17 @@ class Block(nn.Module):
 
 
 class Encoder(nn.Module):
-	def __init__(self, channels=(3, 16, 32, 64)):
+	def __init__(self, channels=(3, 16, 32, 64), attention=True):
 		super().__init__()
 		self.enc_blocks = nn.ModuleList([Block(channels[i], channels[i + 1])
 									     for i in range(len(channels) - 1)])
+		if(attention):
+			self.attention_blocks = nn.ModuleList([SE_Block(channels[i + 1])
+										     	   for i in range(len(channels) - 1)])
+		else:
+			self.attention_blocks = nn.ModuleList([nn.Identity()
+										     	   for i in range(len(channels) - 1)])
+
 		self.pool = nn.MaxPool2d(kernel_size=2)
 
 	def forward(self, x):
@@ -58,10 +84,11 @@ class Encoder(nn.Module):
 		block_outputs = []
 
 		# loop through the encoder blocks
-		for block in self.enc_blocks:
+		for block, attention_block in zip(self.enc_blocks, self.attention_blocks):
 			# pass the inputs through the current encoder block, store
 			# the outputs, and then apply maxpooling on the output
 			x = block(x)
+			x = attention_block(x)
 			block_outputs.append(x)
 			x = self.pool(x)
 
@@ -71,13 +98,19 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-	def __init__(self, channels=(64, 32, 16)):
+	def __init__(self, channels=(64, 32, 16), attention=True):
 		super().__init__()
 		self.channels = channels
 		self.upconvs = nn.ModuleList([nn.ConvTranspose2d(channels[i], channels[i + 1], kernel_size=2, stride=2)
 								      for i in range(len(channels) - 1)])
 		self.dec_blocks = nn.ModuleList([Block(channels[i], channels[i + 1])
 									  for i in range(len(channels) - 1)])
+		if(attention):
+			self.attention_blocks = nn.ModuleList([SE_Block(channels[i + 1])
+										     	   for i in range(len(channels) - 1)])
+		else:
+			self.attention_blocks = nn.ModuleList([nn.Identity()
+										     	   for i in range(len(channels) - 1)])
 
 	def forward(self, x, enc_features):
 		# loop through the number of channels
@@ -92,6 +125,7 @@ class Decoder(nn.Module):
 			enc_feature = self.crop(enc_features[i], x)
 			x = torch.cat([x, enc_feature], dim=1)
 			x = self.dec_blocks[i](x)
+			x = self.attention_blocks[i](x)
 
 		# return the final decoder output
 		return x
@@ -110,8 +144,8 @@ class Decoder(nn.Module):
 class UNet(nn.Module):
 	def __init__(self, config, gamma=2):
 		super().__init__()
-		self.encoder = Encoder(config["encoder_channels"])
-		self.decoder = Decoder(config["decoder_channels"])
+		self.encoder = Encoder(config["encoder_channels"], config["attention"])
+		self.decoder = Decoder(config["decoder_channels"], config["attention"])
 
 		self.head = nn.Conv2d(config["decoder_channels"][-1], constants.NUM_CLASSES, kernel_size=1)
 		self.retain_dim = config["retain_dim"]
