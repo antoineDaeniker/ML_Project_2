@@ -15,7 +15,8 @@ def metrics_from_confusion_matrix(_confusion_matrix):
     precision = TP / (TP + FP) if (TP + FP) > 0 else 0.0
     recall = TP / (TP + FN) if (TP + FN) > 0 else 0.0
     _f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-    return {"acc": acc, "precision": precision, "recall": recall, "f1_score": _f1_score}
+    IoU = TP / (TP + FP + FN) if (TP + FP + FN) > 0 else 0.0
+    return {"acc": acc, "precision": precision, "recall": recall, "f1_score": _f1_score, "IoU":IoU}
 
 
 def metrics(y_pred, y_true, threshold=0.5, curve=False):

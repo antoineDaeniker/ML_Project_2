@@ -76,7 +76,11 @@ def train(model, dataloaders, args, config):
 
                     "training f1 score": scores['train']['f1_score'],
                     "validation f1 score": scores['val']['f1_score'],
-                    "test f1 score": scores['test']['f1_score']
+                    "test f1 score": scores['test']['f1_score'],
+
+                    "training IoU": scores['train']['IoU'],
+                    "validation IoU": scores['val']['IoU'],
+                    "test IoU": scores['test']['IoU']
                 })
 
         print("Epoch {}:\nTrain: {}\nValidation: {}\nTest: {}\nLoss: {}\n".format(
