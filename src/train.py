@@ -30,6 +30,11 @@ def build_optimizer(config, params):
 def train(model, dataloaders, args, config):
     opt = build_optimizer(config["training"], model.parameters())
 
+    # scheduler
+    scheduler_gamma = 0.9
+    lambda1 = lambda epoch: (1 - epoch/config["training"]["epochs"])**scheduler_gamma 
+    scheduler = optim.lr_scheduler.LambdaLR(opt, lr_lambda=lambda1)
+
     if(args.use_wandb):
         wandb.init(
                 project="centriole-segmentation",
@@ -57,6 +62,9 @@ def train(model, dataloaders, args, config):
         if val_max < scores['val']['f1_score']:
             val_max = scores['val']['f1_score']
             best_model = copy.deepcopy(model)
+
+        if(scheduler is not None):
+            scheduler.step()
 
         if(args.use_wandb):
             wandb.log({
