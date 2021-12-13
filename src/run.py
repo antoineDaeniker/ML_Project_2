@@ -3,9 +3,14 @@ import sys
 import glob
 import json
 import argparse
+from tqdm import tqdm
+from pathlib import Path
 
+import cv2
 import torch
+import torch.nn.functional as F
 from torchvision import transforms
+from torchvision.transforms.functional import InterpolationMode
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 
@@ -28,7 +33,7 @@ def arg_parse():
                         help='CPU / GPU device.')
     parser.add_argument('--device', type=str, default="cuda:0",
                         help='CPU / GPU device.')
-    parser.add_argument('--dataset_dir', type=str, default="../datasets_full/all_channel_img",
+    parser.add_argument('--dataset_dir', type=str, default="../datasets_full/single-channel-images",
                         help='Dataset directory.')
     parser.add_argument('--checkpoint_dir', type=str, default="./checkpoints",
                         help='Directory for saving checkpoints.')
@@ -59,44 +64,41 @@ if __name__ == '__main__':
     mask_path = f"{args.dataset_dir}/masks"
     
     # relative paths to images
-    all_images = []
-    for image in glob.glob(f"{image_path}/*.{image_format}"):
-        all_images.append(image)
-        print(image)
+    all_masks = []
+    for mask in glob.glob(f"{mask_path}/*.png"):
+        all_masks.append(mask)
+        print(mask)
 
     # train/val/test split: 80/10/10
-    train_images, val_images = train_test_split(all_images, test_size=0.2)
-    val_images, test_images = train_test_split(val_images, test_size=0.5)
+    train_masks, val_masks = train_test_split(all_masks, test_size=0.2)
+    val_masks, test_masks = train_test_split(val_masks, test_size=0.5)
 
-    train_masks = [f'{mask_path}/{image.split("/")[-1][:-4]}_mask.png' for image in train_images] 
-    val_masks = [f'{mask_path}/{image.split("/")[-1][:-4]}_mask.png' for image in val_images] 
-    test_masks = [f'{mask_path}/{image.split("/")[-1][:-4]}_mask.png' for image in test_images] 
-
+    train_images = [f'{image_path}/{mask.split("/")[-1][:-9]}.{image_format}' for mask in train_masks] 
+    val_images = [f'{image_path}/{mask.split("/")[-1][:-9]}.{image_format}' for mask in val_masks] 
+    test_images = [f'{image_path}/{mask.split("/")[-1][:-9]}.{image_format}' for mask in test_masks] 
    
     print(f"Training set: {len(train_images)} instances.")
     print(f"Validation set: {len(val_images)} instances.")
     print(f"Test set: {len(test_images)} instances.")
-   
-    data_augmentation = {}
-    data_augmentation["both"] = None
-    data_augmentation["image"] = None
 
-    """
+
     data_augmentation = {}
-    data_augmentation["both"] = transforms.Compose([
-                                                    transforms.RandomHorizontalFlip(p=0.3),
-                                                    transforms.RandomVerticalFlip(p=0.3),
-                                                    transforms.RandomApply(
-                                                         transforms.RandomRotation(degrees=40), p=0.6
-                                                        )
-                                                   ])
-    # Maybe also transforms.RandomResizedCrop???
-    data_augmentation["image"] = transforms.Compose([transforms.RandomGrayscale(p=0.1),
-                                                     transforms.GaussianBlur(kernel_size=3, sigma=(0.5, 2)),
-                                                     preprocessing.RandomGaussianNoise(mean=0, std=1)
+    if(config["dataset"]["data_augmentation"]):
+        data_augmentation["both"] = transforms.Compose([
+                                                        transforms.RandomHorizontalFlip(p=0.3),
+                                                        transforms.RandomVerticalFlip(p=0.3)
+    #                                                   transforms.RandomApply(
+    #                                                       transforms.RandomRotation(degrees=10), p=0.3
+    #                                                       )
                                                     ])
-    """
-    
+        data_augmentation["image"] = transforms.Compose([transforms.GaussianBlur(kernel_size=3, sigma=(0.5, 2)),
+                                                        preprocessing.RandomGaussianNoise(mean=0, std=0.02)
+                                                        ])
+    else:
+        data_augmentation["both"] = None
+        data_augmentation["image"] = None
+
+
     train_transform = transforms.Compose([transforms.ToTensor()])
     test_transform = transforms.Compose([transforms.ToTensor()])
 
@@ -122,6 +124,52 @@ if __name__ == '__main__':
 
     model = UNet(config["architecture"], gamma=config["training"]["gamma"]).to(args.device)
     
-    best_model, scores = train(model, dataloaders, args, config)
+    # load the trained weights if they exist
+    checkpoint_path = f'{args.checkpoint_dir}/{args.config.split("/")[-1][:-5]}'
+    Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
+    try:
+        print(f"{checkpoint_path}/best_model.pt")
+        best_model = torch.load(f"{checkpoint_path}/best_model.pt")
+        best_model.eval()
+        print("Trained weights successfully loaded.")
+    except:
+        print("There are no trained weights. Initializing training.")
+        best_model, scores = train(model, dataloaders, args, config)
+        torch.save(best_model, f"{checkpoint_path}/best_model.pt")
+        best_model.eval()
 
-    torch.save(best_model, f"{args.checkpoint_dir}/best_model.pt")
+    # tile predicted masks for visualization purposes
+    predictions = []
+    for (batch, label) in tqdm(dataloaders['test']):
+        batch = batch.to(args.device)
+
+        pred = F.softmax(best_model(batch), dim=1)
+        for i in range(pred.shape[0]):
+            predictions.append(pred[i, 1].cpu().detach().unsqueeze(dim=0))
+
+    # resize to original size
+    resize_transform = transforms.Resize(size=(constants.FULL_IMAGE_WIDTH,
+                                               constants.FULL_IMAGE_HEIGHT),
+										interpolation=InterpolationMode.NEAREST)
+
+
+    predictions_path = f'{args.dataset_dir}/predictions/{args.config.split("/")[-1][:-5]}'
+    Path(predictions_path).mkdir(parents=True, exist_ok=True)
+    test_predictions = [f'{predictions_path}/{image.split("/")[-1]}' for image in test_masks]       
+    for im in range(len(test_images)):
+        vertical_concat = []
+        for i in range(test_dataset.height_crops):
+            horizontal_concat = []
+            for j in range(test_dataset.width_crops):
+                idx = (im * test_dataset.crops_per_image 
+                     + i * test_dataset.width_crops
+                     + j)
+                horizontal_concat.append(predictions[idx])
+            
+            horizontal_concat = torch.cat(horizontal_concat, dim=2)
+            vertical_concat.append(horizontal_concat)
+
+        vertical_concat = torch.cat(vertical_concat, dim=1)
+
+        prediction_mask = resize_transform(vertical_concat).permute(1, 2, 0).numpy()
+        cv2.imwrite(test_predictions[im], prediction_mask * 255)
