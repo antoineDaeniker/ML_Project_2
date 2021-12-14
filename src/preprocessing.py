@@ -14,7 +14,7 @@ class RandomGaussianNoise(object):
         self.std = std
 
     def __call__(self, image):
-        noise = torch.normal(mean=mean, std=std, size=image.shape)
+        noise = torch.normal(mean=self.mean, std=self.std, size=image.shape)
         return (image + noise)
 
 
