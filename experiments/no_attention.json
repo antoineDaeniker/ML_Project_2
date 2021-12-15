@@ -2,11 +2,11 @@
     "seed" : 4,
 
     "training":{
-        "lr"           : 0.0005,
+        "lr"           : 1e-5,
         "epochs"       : 100,
         "opt"          : "adam",
-        "weight_decay" : 5e-5,
-        "batch_size"   : 5000,
+        "weight_decay" : 1e-4,
+        "batch_size"   : 256,
         "gamma"        : 1.5
     },
 
@@ -18,8 +18,8 @@
     },
 
     "architecture":{
-        "encoder_channels": [1, 64],
-        "decoder_channels": [64],
+        "encoder_channels": [1, 32, 64],
+        "decoder_channels": [64, 32],
         "dropout"         : 0.1,
         "attention"       : false,
         "retain_dim"      : true
