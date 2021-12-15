@@ -40,7 +40,7 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 
 
 class SegmentationCentrioleTrain(Dataset):
-	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, data_augmentation=None, min_pos_p=0.05):
+	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, data_augmentation=None, min_pos_p=0.02):
 		# store the image and mask filepaths, and augmentation
 		# transforms
 		self.image_paths = image_paths

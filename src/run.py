@@ -85,15 +85,10 @@ if __name__ == '__main__':
     data_augmentation = {}
     if(config["dataset"]["data_augmentation"]):
         data_augmentation["both"] = transforms.Compose([
-                                                        transforms.RandomHorizontalFlip(p=0.3),
-                                                        transforms.RandomVerticalFlip(p=0.3)
-    #                                                   transforms.RandomApply(
-    #                                                       transforms.RandomRotation(degrees=10), p=0.3
-    #                                                       )
+                                                        transforms.RandomHorizontalFlip(p=0.2),
+                                                        transforms.RandomVerticalFlip(p=0.2)
                                                     ])
-        data_augmentation["image"] = transforms.Compose([transforms.GaussianBlur(kernel_size=3, sigma=(0.5, 2)),
-                                                        preprocessing.RandomGaussianNoise(mean=0, std=0.02)
-                                                        ])
+        data_augmentation["image"] = transforms.Compose([preprocessing.RandomGaussianNoise(mean=0, std=0.03)])
     else:
         data_augmentation["both"] = None
         data_augmentation["image"] = None
@@ -105,7 +100,8 @@ if __name__ == '__main__':
 
     train_dataset = SegmentationCentrioleTrain(train_images, train_masks, 
                                                transform=train_transform,
-                                               dataset_config=config["dataset"])
+                                               dataset_config=config["dataset"],
+                                               data_augmentation=data_augmentation)
     val_dataset = SegmentationCentrioleTest(val_images, val_masks, 
                                             transform=test_transform,
                                             dataset_config=config["dataset"])
