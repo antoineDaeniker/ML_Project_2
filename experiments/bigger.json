@@ -2,17 +2,17 @@
     "seed" : 4,
 
     "training":{
-        "lr"           : 0.005,
-        "epochs"       : 20,
+        "lr"           : 0.0005,
+        "epochs"       : 100,
         "opt"          : "adam",
-        "weight_decay" : 1e-3,
+        "weight_decay" : 5e-5,
         "batch_size"   : 5000,
         "gamma"        : 1.5
     },
 
     "dataset":{
-        "normalize"             : true,
-        "standardize"           : false,
+        "normalize"             : false,
+        "standardize"           : true,
         "nonmaxima_suppresion"  : false,
         "data_augmentation"     : true
     },
