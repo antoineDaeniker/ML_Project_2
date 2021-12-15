@@ -88,7 +88,7 @@ if __name__ == '__main__':
                                                         transforms.RandomHorizontalFlip(p=0.2),
                                                         transforms.RandomVerticalFlip(p=0.2)
                                                     ])
-        data_augmentation["image"] = transforms.Compose([preprocessing.RandomGaussianNoise(mean=0, std=0.03)])
+        data_augmentation["image"] = transforms.Compose([preprocessing.RandomGaussianNoise(mean=0, std=0.1)])
     else:
         data_augmentation["both"] = None
         data_augmentation["image"] = None
