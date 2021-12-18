@@ -33,7 +33,7 @@ def arg_parse():
                         help='CPU / GPU device.')
     parser.add_argument('--device', type=str, default="cuda:0",
                         help='CPU / GPU device.')
-    parser.add_argument('--dataset_dir', type=str, default="../datasets_full",
+    parser.add_argument('--dataset_dir', type=str, default="../dataset",
                         help='Dataset directory.')
     parser.add_argument('--checkpoint_dir', type=str, default="./checkpoints",
                         help='Directory for saving checkpoints.')
