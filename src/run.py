@@ -73,6 +73,8 @@ if __name__ == '__main__':
     for mask in glob.glob(f"{mask_path}/*.png"):
         all_masks.append(mask)
         print(mask)
+    
+    all_masks.sort()
 
     # train/val/test split: 80/10/10
     train_masks, val_masks = train_test_split(all_masks, test_size=0.2)

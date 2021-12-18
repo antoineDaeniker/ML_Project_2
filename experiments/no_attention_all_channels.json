@@ -12,7 +12,7 @@
 
     "dataset":{
         "channels"              : 3,
-        "min_positive_prob"     : 0.15,
+        "min_positive_prob"     : 0.14,
         "normalize"             : false,
         "standardize"           : true,
         "nonmaxima_suppresion"  : false,
