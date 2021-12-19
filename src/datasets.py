@@ -16,7 +16,9 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 	# load the image from disk and read the associated mask from disk in grayscale mode
 	image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype(dtype=np.float)
 	mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) 
-	image = np.expand_dims(image, axis=-1)
+	
+	if(dataset_config["channels"] == 1):
+		image = np.expand_dims(image, axis=-1)
 
 	if(dataset_config["nonmaxima_suppresion"]):
 		for i in range(image.shape[2]):
@@ -26,8 +28,8 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 
 			# nonmaxima suppresion
 			image[:, :, i] = preprocessing.nonmaxima_suppression_box(image[:, :, i])
-			kernel = np.ones((5, 5))
-			image[:, :, i] = cv2.dilate(image[:, :, i], kernel=kernel, iterations=2)
+			kernel = np.ones((3, 3))
+			image[:, :, i] = cv2.dilate(image[:, :, i], kernel=kernel, iterations=1)
 	
 	if(dataset_config["normalize"]):
 		image = preprocessing.normalize(image)
@@ -40,12 +42,13 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 
 
 class SegmentationCentrioleTrain(Dataset):
-	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, data_augmentation=None, min_pos_p=0.02):
+	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, data_augmentation=None):
 		# store the image and mask filepaths, and augmentation
 		# transforms
 		self.image_paths = image_paths
 		self.mask_paths = mask_paths
 		self.transform = transform
+		min_pos_p = dataset_config["min_positive_prob"]
 
 		# data augmentation should be dictonary with two transforms:
 		# one which is applied only to the image (gaussian blur) 

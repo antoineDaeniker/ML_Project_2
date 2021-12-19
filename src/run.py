@@ -33,7 +33,7 @@ def arg_parse():
                         help='CPU / GPU device.')
     parser.add_argument('--device', type=str, default="cuda:0",
                         help='CPU / GPU device.')
-    parser.add_argument('--dataset_dir', type=str, default="../datasets_full/single-channel-images",
+    parser.add_argument('--dataset_dir', type=str, default="../dataset",
                         help='Dataset directory.')
     parser.add_argument('--checkpoint_dir', type=str, default="./checkpoints",
                         help='Directory for saving checkpoints.')
@@ -58,16 +58,23 @@ if __name__ == '__main__':
     args.device = (args.device if torch.cuda.is_available() else 'cpu')
     args.pin_memory = True if args.device != "cpu" else False
 
+    assert config["dataset"]["channels"] in [1, 3], "Only 1 or 3 channels are supported!"
 
     image_format = "tif"
-    image_path = f"{args.dataset_dir}/{image_format}"
-    mask_path = f"{args.dataset_dir}/masks"
+    channels_dir = "single-channel-images"
+    if(config["dataset"]["channels"] == 3):
+        channels_dir = "all-channel-images"
+
+    image_path = f"{args.dataset_dir}/{channels_dir}/{image_format}"
+    mask_path = f"{args.dataset_dir}/{channels_dir}/masks"
     
     # relative paths to images
     all_masks = []
     for mask in glob.glob(f"{mask_path}/*.png"):
         all_masks.append(mask)
         print(mask)
+    
+    all_masks.sort()
 
     # train/val/test split: 80/10/10
     train_masks, val_masks = train_test_split(all_masks, test_size=0.2)
@@ -125,7 +132,7 @@ if __name__ == '__main__':
     Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
     try:
         print(f"{checkpoint_path}/best_model.pt")
-        best_model = torch.load(f"{checkpoint_path}/best_model.pt")
+        best_model = torch.load(f"{checkpoint_path}/best_model.pt", map_location=torch.device(args.device))
         best_model.eval()
         print("Trained weights successfully loaded.")
     except:
@@ -149,7 +156,7 @@ if __name__ == '__main__':
 										interpolation=InterpolationMode.NEAREST)
 
 
-    predictions_path = f'{args.dataset_dir}/predictions/{args.config.split("/")[-1][:-5]}'
+    predictions_path = f'{args.dataset_dir}/{channels_dir}/predictions/{args.config.split("/")[-1][:-5]}'
     Path(predictions_path).mkdir(parents=True, exist_ok=True)
     test_predictions = [f'{predictions_path}/{image.split("/")[-1]}' for image in test_masks]       
     for im in range(len(test_images)):

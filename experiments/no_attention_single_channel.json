@@ -1,0 +1,33 @@
+{
+    "seed" : 4,
+
+    "training":{
+        "lr"           : 1e-5,
+        "epochs"       : 40,
+        "opt"          : "adam",
+        "weight_decay" : 1e-4,
+        "batch_size"   : 256,
+        "gamma"        : 1.5
+    },
+
+    "dataset":{
+        "channels"              : 1,
+        "min_positive_prob"     : 0.02,
+        "normalize"             : false,
+        "standardize"           : true,
+        "nonmaxima_suppresion"  : false,
+        "data_augmentation"     : true
+    },
+
+    "architecture":{
+        "encoder_channels": [1, 32, 64],
+        "decoder_channels": [64, 32],
+        "dropout"         : 0.1,
+        "attention"       : false,
+        "retain_dim"      : true
+    },
+
+    "evaluation":{
+        "threshold"       : 0.5
+    }
+}
