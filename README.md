@@ -22,7 +22,7 @@ This repository contains the code for the second ML project 2 ML4Science, perfor
 ### Run U-Net
 To run the test of the U-Net and give out predictions use the following command inside the `src` folder:
         
-       python 3 run.py --config ../experiments/full_experiment_single_channel_test.json --num_workers 0
+       python 3 run.py --config ../experiments/full_experiment_single_channel.json --num_workers 0
 
 To train the U-Net use the corresponding json under `experiments`.
        
