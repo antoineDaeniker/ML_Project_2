@@ -24,7 +24,10 @@ To run the training of the U-Net and give out predictions use the following comm
         
        python3 run.py --config ../experiments/full_experiment_single_channel.json --num_workers 0
 
-Explore how to train the U-Net with the corresponding json under `experiments`.
+Explore how to train the U-Net with the corresponding json under `experiments`:
+`full_experiment_single_channel`  - Runs the U-Net on the single channel images
+`full_experiment_all_channels` – Runs the U-Net on the images which combine all channels
+Further you can run it with no attention for single and all channels (`no_attention_single_channel` and no_attention_all_channels) and no data augmentation (`no_data_augmentation_all_channels` and `no_data_augmentation_single_channel`)
        
 ### Run Matching
 The notebook `matching.ipynb` shows and explains our matching procedure, from loading the tif image over using StarDist and creating a matching. 
