@@ -7,6 +7,12 @@ import constants
 
 
 def set_seed(seed=44):
+    """
+    Set the seed for randomization
+
+    Args:
+        seed (int, optional): the seed value we want to set. Defaults to 44.
+    """
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -14,6 +20,13 @@ def set_seed(seed=44):
 
 
 def plot_image_mask(image, mask):
+    """
+    Plot image and mask for each channels
+
+    Args:
+        image : image to display
+        mask : mask to display
+    """
     channels = image.shape[2]
 
     if(channels == 1):

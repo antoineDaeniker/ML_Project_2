@@ -15,6 +15,16 @@ from metrics import metrics, metrics_from_confusion_matrix
 
 
 def build_optimizer(config, params):
+    """
+    Build the optimizer
+
+    Args:
+        config : choose which optimizer, lerning rate, weight_decay we want
+        params : filter parameter
+
+    Returns:
+        optimizer: optimizer acording to config and params args
+    """
     filter_fn = filter(lambda p: p.requires_grad, params)
     if config["opt"] == 'adam':
         optimizer = optim.Adam(filter_fn, lr=config["lr"], weight_decay=config["weight_decay"])
@@ -28,6 +38,19 @@ def build_optimizer(config, params):
 
 
 def train(model, dataloaders, args, config):
+    """
+    Training procedure of the model
+
+    Args:
+        model : the model we choose
+        dataloaders : represent the dataset
+        args : args to use wandb
+        config : procedure configurations
+
+    Returns:
+        best_model : the best model during the training procedure
+        final_scores : all results from the testing procedure
+    """
     opt = build_optimizer(config["training"], model.parameters())
 
     # scheduler
@@ -102,6 +125,18 @@ def train(model, dataloaders, args, config):
 
 
 def test(dataloaders, model, args, config):
+    """
+    Testing procedure
+
+    Args:
+        dataloaders : represent the dataset
+        model : the model we choose
+        args : args to use wandb
+        config : procedure configurations
+
+    Returns:
+        scores : test results using training prediction
+    """
     model.eval()
 
     scores = {}

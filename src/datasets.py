@@ -13,6 +13,18 @@ import preprocessing
 
 
 def image_mask_preprocessing(image_path, mask_path, dataset_config):
+	"""
+	Load and pre-process images and mask according to dataset_config
+
+	Args:
+		image_path (string): the path to images dataset folder
+		mask_path (string): the path to gt mask dataset folder
+		dataset_config : configs for loading dataset
+
+	Returns:
+		image : preprocessed image
+		mask : mask
+	"""
 	# load the image from disk and read the associated mask from disk in grayscale mode
 	image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype(dtype=np.float)
 	mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) 
@@ -42,6 +54,12 @@ def image_mask_preprocessing(image_path, mask_path, dataset_config):
 
 
 class SegmentationCentrioleTrain(Dataset):
+	"""
+	Represent our centriol train dataset for the segmetation model
+
+	Args:
+		Dataset : centriol dataset
+	"""
 	def __init__(self, image_paths, mask_paths, dataset_config, transform=None, data_augmentation=None):
 		# store the image and mask filepaths, and augmentation
 		# transforms
@@ -139,6 +157,12 @@ class SegmentationCentrioleTrain(Dataset):
 
 
 class SegmentationCentrioleTest(Dataset):
+	"""
+	Represent our centriol test dataset for the segmetation model
+
+	Args:
+		Dataset : centriol dataset
+	"""
 	def __init__(self, image_paths, mask_paths, dataset_config, transform=None):
 		# store the image and mask filepaths, and augmentation
 		# transforms

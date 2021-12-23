@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import seaborn as sns
 import torch
 from sklearn.metrics import (PrecisionRecallDisplay, accuracy_score, auc,
                              average_precision_score, confusion_matrix,
@@ -10,6 +8,15 @@ from sklearn.metrics import (PrecisionRecallDisplay, accuracy_score, auc,
 
 
 def metrics_from_confusion_matrix(_confusion_matrix):
+    """
+    Generate metric from confusion matrix
+
+    Args:
+        _confusion_matrix : the confusion matrix
+
+    Returns:
+        returns : accuracy, precision, recall, f1_score, IoU scores
+    """
     TN, FN, TP, FP = _confusion_matrix[np.array([0, 1, 1, 0]), np.array([0, 0, 1, 1])]
     acc = (TP + TN) / (TN + FN + TP + FP)
     precision = TP / (TP + FP) if (TP + FP) > 0 else 0.0
@@ -20,6 +27,18 @@ def metrics_from_confusion_matrix(_confusion_matrix):
 
 
 def metrics(y_pred, y_true, threshold=0.5, curve=False):
+    """
+    Generate all metrics and also plots if curve is True
+
+    Args:
+        y_pred : prediction from the model
+        y_true : ground truth labels data
+        threshold (float, optional): use to select y_pred for metrics. Defaults to 0.5.
+        curve (bool, optional): True if we wants plots, False if not. Defaults to False.
+
+    Returns:
+        returns : accuracy, precision, recall, f1_score, IoU scores
+    """
 
     ######################################
     ###### NON THRESHOLDED METRICS #######

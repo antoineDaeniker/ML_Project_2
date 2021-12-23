@@ -25,6 +25,12 @@ from train import train
 
 
 def arg_parse():
+    """
+    Add element to parser from the cmd line
+
+    Returns:
+        parser: the parser with all parse argument from the cmd line
+    """
     parser = argparse.ArgumentParser(description='Centriole segmentation arguments.')
 
     parser.add_argument("--config", type=str, required=True, 

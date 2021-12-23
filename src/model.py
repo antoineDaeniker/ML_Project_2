@@ -9,6 +9,9 @@ import constants
 
 
 class FocalLoss(nn.Module):
+	"""
+	Represent the focal loss
+	"""
 	def __init__(self, alpha=0.005, gamma=2):
 		super(FocalLoss, self).__init__()
 		# alpha is proportion of positive instances
@@ -28,6 +31,9 @@ class FocalLoss(nn.Module):
 
 
 class SE_Block(nn.Module):
+	"""
+	Represent block that are added if we want attention
+	"""
     def __init__(self, in_channels, r=8):
         super().__init__()
         self.squeeze = nn.AdaptiveAvgPool2d(1)
@@ -47,6 +53,9 @@ class SE_Block(nn.Module):
 
 
 class Block(nn.Module):
+	"""
+	Represent block layer use  in the model
+	"""
 	def __init__(self, in_channels, out_channels):
 		super().__init__()
 
@@ -66,6 +75,9 @@ class Block(nn.Module):
 
 
 class Encoder(nn.Module):
+	"""
+	Represent the first part of the U-Net, namely the encoder part
+	"""
 	def __init__(self, channels=(3, 16, 32, 64), attention=True):
 		super().__init__()
 		self.enc_blocks = nn.ModuleList([Block(channels[i], channels[i + 1])
@@ -98,6 +110,9 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
+	"""
+	Represent the second part of the U-Net, namely the decoder part
+	"""
 	def __init__(self, channels=(64, 32, 16), attention=True, dropout_p=0.1):
 		super().__init__()
 		self.channels = channels
@@ -144,6 +159,9 @@ class Decoder(nn.Module):
 
 
 class UNet(nn.Module):
+	"""
+	Represent the U-Net model
+	"""
 	def __init__(self, config, gamma=2):
 		super().__init__()
 		self.encoder = Encoder(config["encoder_channels"], config["attention"])

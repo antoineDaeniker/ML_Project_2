@@ -19,7 +19,15 @@ class RandomGaussianNoise(object):
 
 
 def standardize_patch(image):
-    # standardize a tensor patch
+    """
+    standardize a tensor patch
+
+    Args:
+        image : the image to be standardize
+
+    Returns:
+        image: the standardized image
+    """
 
     image_mean = torch.mean(image, dim=0)
     image_std = torch.std(image, dim=0) + 1e-10
@@ -29,7 +37,15 @@ def standardize_patch(image):
 
 
 def normalize(image):
-    # normalize each channel separately to [0, 1]
+    """
+    normalize each channel separately to [0, 1]
+
+    Args:
+        image : the image to be normalize
+
+    Returns:
+        normalized_image: the normalized image
+    """
 
     normalized_image = np.zeros(image.shape, dtype=np.float)
     for i in range(image.shape[2]):
@@ -44,7 +60,15 @@ def normalize(image):
 
 
 def log_normalize(image):
-    # normalize log of each channel separately to [0, 1]
+    """
+    normalize log of each channel separately to [0, 1]
+
+    Args:
+        image : the image to be log normalize
+
+    Returns:
+        normalized_image: the log normalize image
+    """
 
     normalized_image = np.zeros(image.shape, dtype=np.float)
     for i in range(image.shape[2]):
@@ -59,6 +83,16 @@ def log_normalize(image):
 
 
 def thresholded_normalize(image, percentile=95):
+    """
+    Normalize image data that are above the percentile argument
+
+    Args:
+        image : the image to be normalize
+        percentile (int, optional): threshold quantity. Defaults to 95.
+
+    Returns:
+        normalized_image: the normalized image
+    """
     normalized_image = np.zeros(image.shape, dtype=np.float)
     for i in range(image.shape[2]):
         q = np.percentile(image[:, :, i], q=percentile)
@@ -73,7 +107,15 @@ def thresholded_normalize(image, percentile=95):
 
 
 def standardize(image):
-    # standardize each channel separately
+    """
+    standardize each channel separately
+
+    Args:
+        image : the set of images to be normalized separetly
+
+    Returns:
+        standardized_image: set of standardized images
+    """
 
     standardized_image = np.zeros(image.shape, dtype=np.float)
     for i in range(image.shape[2]):
@@ -86,6 +128,16 @@ def standardize(image):
 
 
 def nonmaxima_suppression_box(image, size=3):
+    """
+    Perform the nonmaxima_supression function
+
+    Args:
+        image : [description]
+        size (int, optional): kernel size. Defaults to 3.
+
+    Returns:
+        image: modify image after nonmaxima suppression function
+    """
     domain = np.ones((size, size))
     max_val = signal.order_filter(image, domain, 8)
     image = np.where(image == max_val, image, 0)
