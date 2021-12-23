@@ -20,11 +20,11 @@ This repository contains the code for the second ML project 2 ML4Science, perfor
 ## Run
 
 ### Run U-Net
-To run the test of the U-Net and give out predictions use the following command inside the `src` folder:
+To run the training of the U-Net and give out predictions use the following command inside the `src` folder:
         
        python 3 run.py --config ../experiments/full_experiment_single_channel.json --num_workers 0
 
-To train the U-Net use the corresponding json under `experiments`.
+Explore how to train the U-Net with the corresponding json under `experiments`.
        
 ### Run Matching
 The notebook `matching.ipynb` shows and explains our matching procedure, from loading the tif image over using StarDist and creating a matching. 
